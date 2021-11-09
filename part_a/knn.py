@@ -53,10 +53,13 @@ def main():
     val_data = load_valid_csv("../data")
     test_data = load_public_test_csv("../data")
 
-    print("Sparse matrix:")
-    print(sparse_matrix)
-    print("Shape of sparse matrix:")
-    print(sparse_matrix.shape)
+    # print("Sparse matrix:")
+    # print(sparse_matrix)
+    # print("Shape of sparse matrix:")
+    # print(sparse_matrix.shape)
+    print(test_data.keys())
+    print(len(test_data['question_id']))
+    print(len(test_data['is_correct']))
 
     #####################################################################
     # TODO:                                                             #
@@ -78,8 +81,9 @@ def main():
     # plt.plot(ks, acc_by_item)
     # plt.show()
 
-    knn_impute_by_user(sparse_matrix, test_data, 11)
-    knn_impute_by_item(sparse_matrix, test_data, 21)
+    knn_impute_by_user(sparse_matrix,test_data, 11)
+    knn_impute_by_item(sparse_matrix,test_data, 21)
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################

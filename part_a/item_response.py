@@ -24,7 +24,9 @@ def neg_log_likelihood(data, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    log_lklihood = 0.
+    sig = sigmoid(np.array(theta[data['user_id']])-np.array(beta(data['question_id'])))
+    l = np.array(data['is_correct'])*np.log(sig) + (1-np.array((data['is_correct']))*np.log(1-sig))
+    log_lklihood = l.sum()
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
