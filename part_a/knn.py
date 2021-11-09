@@ -1,5 +1,6 @@
 from sklearn.impute import KNNImputer
 from utils import *
+import matplotlib.pyplot as plt
 
 
 def knn_impute_by_user(matrix, valid_data, k):
@@ -37,7 +38,10 @@ def knn_impute_by_item(matrix, valid_data, k):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    acc = None
+    nbrs = KNNImputer(n_neighbors=k)
+    # We use NaN-Euclidean distance measure.
+    mat = nbrs.fit_transform(matrix.T)
+    acc = sparse_matrix_evaluate(valid_data, mat.T)
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -60,7 +64,15 @@ def main():
     # the best performance and report the test accuracy with the        #
     # chosen k*.                                                        #
     #####################################################################
-    pass
+    k_list = [k for k in range(1, 27, 5)]
+    acc = []
+    for k in k_list:
+        acc.append(knn_impute_by_item(sparse_matrix, val_data, k))
+    plt.plot(k_list, acc)
+    plt.show()
+    k_max = k_list[acc.index(max(acc))]
+    test_acc = knn_impute_by_item(sparse_matrix, test_data, k_max)
+    print(test_acc)
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
