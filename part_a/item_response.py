@@ -24,7 +24,9 @@ def neg_log_likelihood(data, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    log_lklihood = 0.
+    sig = sigmoid(np.array(theta[data['user_id']]) - np.array(beta[data['question_id']]))
+    l = np.array(data['is_correct'])*np.log(sig) + (1-np.array((data['is_correct']))*np.log(1-sig))
+    log_lklihood = l.sum()
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -52,18 +54,19 @@ def update_theta_beta(data, lr, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    new_theta = np.zeros(theta.shape)
-    new_beta = np.zeros(beta.shape)
+    grad_theta = np.zeros(theta.shape)
+    grad_beta = np.zeros(beta.shape)
     num = len(data["user_id"])
-    for k in range(num):
+    for k in range(int(num/4)):
         i = data["user_id"][k]
         j = data["question_id"][k]
         c_ij = data["is_correct"][k]
-        d = theta[i] - beta[j]
-        new_theta[i] += c_ij * (np.exp(beta[j]) / np.exp(d)) - (1 - c_ij) * (1 - np.exp(beta[j]) / np.exp(d))
-        new_beta[j] += (1 - c_ij) * (1 - np.exp(beta[j]) / np.exp(d)) - c_ij * (np.exp(beta[j]) / np.exp(d))
-    theta += lr * new_theta
-    beta += lr * new_beta
+        b_exp = np.exp(beta)[j] / (np.exp(beta)[j] + np.exp(theta)[i])
+        th_exp = np.exp(theta)[i] / (np.exp(beta)[j] + np.exp(theta)[i])
+        grad_theta[i] += (c_ij * b_exp) - ((1 - c_ij) * th_exp)
+        grad_beta[i] += (c_ij * (-b_exp)) + ((1 - c_ij) * th_exp)
+    theta -= lr * grad_theta
+    beta -= lr * grad_beta
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -83,10 +86,9 @@ def irt(data, val_data, lr, iterations):
     :param iterations: int
     :return: (theta, beta, val_acc_lst)
     """
-    # TODO: Initialize theta and beta.
-    theta = None
-    beta = None
 
+    theta = np.random.uniform(low=0.0, high=1.0, size=len(data['user_id']))
+    beta = np.random.uniform(low=0.0, high=1.0, size=len(data['question_id']))
     val_acc_lst = []
 
     for i in range(iterations):
@@ -131,7 +133,14 @@ def main():
     # Tune learning rate and number of iterations. With the implemented #
     # code, report the validation and test accuracy.                    #
     #####################################################################
-    pass
+    # print(sparse_matrix.shape)
+    # p = [x for x in range(len(train_data['user_id'])) if train_data['user_id'][x] == 488]
+    # q = [train_data['question_id'][y] for y in p]
+    # r = [train_data['is_correct'][y] for y in p]
+    # print("user id: 488")
+    # print(q)
+    # print(r)
+    irt(train_data, val_data, 0.01, 1)
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
