@@ -25,7 +25,7 @@ def neg_log_likelihood(data, theta, beta):
     # Implement the function as described in the docstring.             #
     #####################################################################
     sig = sigmoid(np.array(theta[data['user_id']]) - np.array(beta[data['question_id']]))
-    l = np.array(data['is_correct'])*np.log(sig) + (1-np.array((data['is_correct']))*np.log(1-sig))
+    l = np.array(data['is_correct'])*np.log(sig) + ((1-np.array((data['is_correct'])))*np.log(1-sig))
     log_lklihood = l.sum()
     #####################################################################
     #                       END OF YOUR CODE                            #
@@ -62,10 +62,10 @@ def update_theta_beta(data, lr, theta, beta):
         c_ij = data["is_correct"][k]
         b_exp = np.exp(beta)[j] / (np.exp(beta)[j] + np.exp(theta)[i])
         th_exp = np.exp(theta)[i] / (np.exp(beta)[j] + np.exp(theta)[i])
-        grad_theta[i] += (c_ij * b_exp) - ((1 - c_ij) * th_exp)
-        grad_beta[i] += (c_ij * (-b_exp)) + ((1 - c_ij) * th_exp)
-    theta -= lr * grad_theta
-    beta -= lr * grad_beta
+        grad_theta[i] += ((c_ij * b_exp) - ((1 - c_ij) * th_exp))
+        grad_beta[j] += ((c_ij * (-b_exp)) + ((1 - c_ij) * th_exp))
+    theta += lr * grad_theta
+    beta += lr * grad_beta
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -139,7 +139,9 @@ def main():
     # print("user id: 488")
     # print(q)
     # print(r)
-    irt(train_data, val_data, 0.01, 1)
+    print("")
+    print(irt(train_data, val_data, 0.005, 20)[2])
+    print(irt(train_data, val_data, 0.01, 20)[2])
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
