@@ -52,7 +52,18 @@ def update_theta_beta(data, lr, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    pass
+    new_theta = np.zeros(theta.shape)
+    new_beta = np.zeros(beta.shape)
+    num = len(data["user_id"])
+    for k in range(num):
+        i = data["user_id"][k]
+        j = data["question_id"][k]
+        c_ij = data["is_correct"][k]
+        d = theta[i] - beta[j]
+        new_theta[i] += c_ij * (np.exp(beta[j]) / np.exp(d)) - (1 - c_ij) * (1 - np.exp(beta[j]) / np.exp(d))
+        new_beta[j] += (1 - c_ij) * (1 - np.exp(beta[j]) / np.exp(d)) - c_ij * (np.exp(beta[j]) / np.exp(d))
+    theta += lr * new_theta
+    beta += lr * new_beta
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
