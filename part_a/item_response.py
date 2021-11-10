@@ -51,13 +51,12 @@ def update_theta_beta(data, lr, theta, beta):
     :return: tuple of vectors
     """
     #####################################################################
-    # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
     grad_theta = np.zeros(theta.shape)
     grad_beta = np.zeros(beta.shape)
     num = len(data["user_id"])
-    for k in range(int(num/4)):
+    for k in range(num):
         i = data["user_id"][k]
         j = data["question_id"][k]
         c_ij = data["is_correct"][k]
