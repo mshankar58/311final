@@ -100,18 +100,24 @@ def irt(data, val_data, lr, iterations):
     theta = np.random.uniform(low=0.0, high=1.0, size=len(set(data['user_id'])))
     beta = np.random.uniform(low=0.0, high=1.0, size=len(set(data['question_id'])))
     val_acc_lst = []
-    neg_log_likeli = []
+    neg_log_likeli_train = []
+    neg_log_likeli_validation = []
 
     for i in range(iterations):
-        neg_lld = neg_log_likelihood(data, theta=theta, beta=beta)
+        neg_lld_train = neg_log_likelihood(data, theta=theta, beta=beta)
+        neg_log_likeli_train.append(neg_lld_train)
+
+        neg_lld_validation = neg_log_likelihood(val_data, theta=theta, beta=beta)
+        neg_log_likeli_validation.append(neg_lld_validation)
+
         score = evaluate(data=val_data, theta=theta, beta=beta)
         val_acc_lst.append(score)
-        neg_log_likeli.append(neg_lld)
-        print("NLLK: {} \t Score: {}".format(neg_lld, score))
+
+        print("NLLK: {} \t Score: {}".format(neg_lld_train, score))
         theta, beta = update_theta_beta(data, lr, theta, beta)
 
     # TODO: You may change the return values to achieve what you want.
-    return theta, beta, val_acc_lst, neg_log_likeli
+    return theta, beta, val_acc_lst, neg_log_likeli_train, neg_log_likeli_validation
 
 
 def evaluate(data, theta, beta):
@@ -145,14 +151,16 @@ def main():
     # Tune learning rate and number of iterations. With the implemented #
     # code, report the validation and test accuracy.                    #
     #####################################################################
-    theta, beta, acc_list, neg_log_likeli_list =irt(train_data, val_data, 0.005, 70)
+    theta, beta, acc_list, neg_log_likeli_list_train, neg_log_likeli_list_validation =irt(train_data, val_data, 0.005, 70)
     plt.figure(1)
     plt.plot(acc_list)
     plt.title("Accuracy over iterations")
     plt.figure(2)
-    plt.plot(neg_log_likeli_list)
-    plt.title("Negative likelihood over iterations")
-    plt.show()
+    plt.plot(neg_log_likeli_list_train)
+    plt.title("Negative likelihood over iterations on training set")
+    plt.figure(3)
+    plt.plot(neg_log_likeli_list_validation)
+    plt.title("Negative likelihood over iterations on validation set")
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -161,7 +169,7 @@ def main():
     # TODO:                                                             #
     # Implement part (d)                                                #
     #####################################################################
-    plt.figure(3)
+    plt.figure(4)
     # j1, j2, j3
     for i in range(3):
         probability = []
