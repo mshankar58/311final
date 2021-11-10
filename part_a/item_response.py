@@ -52,18 +52,19 @@ def update_theta_beta(data, lr, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    new_theta = np.zeros(theta.shape)
-    new_beta = np.zeros(beta.shape)
+    grad_theta = np.zeros(theta.shape)
+    grad_beta = np.zeros(beta.shape)
     num = len(data["user_id"])
     for k in range(num):
         i = data["user_id"][k]
         j = data["question_id"][k]
         c_ij = data["is_correct"][k]
-        d = theta[i] - beta[j]
-        new_theta[i] += c_ij * (np.exp(beta[j]) / np.exp(d)) - (1 - c_ij) * (1 - np.exp(beta[j]) / np.exp(d))
-        new_beta[j] += (1 - c_ij) * (1 - np.exp(beta[j]) / np.exp(d)) - c_ij * (np.exp(beta[j]) / np.exp(d))
-    theta += lr * new_theta
-    beta += lr * new_beta
+        b_exp = np.exp(beta)[j] / (np.exp(beta)[j] + np.exp(theta)[i])
+        th_exp = np.exp(theta)[i] / (np.exp(beta)[j] + np.exp(theta)[i])
+        grad_theta[i] += (c_ij * b_exp) - ((1 - c_ij) * th_exp)
+        grad_beta[i] += (c_ij * (-b_exp)) + ((1 - c_ij) * th_exp)
+    theta -= lr * grad_theta
+    beta -= lr * grad_beta
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
