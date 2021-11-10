@@ -24,10 +24,7 @@ def neg_log_likelihood(data, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    sig = sigmoid(np.array(theta[data['user_id']]) - np.array(beta[data['question_id']]))
-    l = np.array(data['is_correct']) * np.log(sig) + (1-np.array(data['is_correct']) * np.log(1-sig))
-    log_lklihood = l.sum()
-    print(-log_lklihood)
+    log_lklihood = 0.
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -76,9 +73,8 @@ def irt(data, val_data, lr, iterations):
     :return: (theta, beta, val_acc_lst)
     """
     # TODO: Initialize theta and beta.
-    theta = np.random.uniform(low=0.0, high=1.0, size=(len(data['user_id']),))
-    beta = np.array(np.random.uniform(low=0.0, high=1.0, size=(len(['question_id']),)))
-    print(len(theta), len(beta))
+    theta = None
+    beta = None
 
     val_acc_lst = []
 
@@ -118,7 +114,6 @@ def main():
     sparse_matrix = load_train_sparse("../data")
     val_data = load_valid_csv("../data")
     test_data = load_public_test_csv("../data")
-    print(irt(train_data, val_data, 0.01, 1))
 
     #####################################################################
     # TODO:                                                             #
