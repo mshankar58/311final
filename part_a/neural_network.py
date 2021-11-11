@@ -70,7 +70,8 @@ class AutoEncoder(nn.Module):
         # Implement the function as described in the docstring.             #
         # Use sigmoid activations for f and g.                              #
         #####################################################################
-        out = inputs
+        hidden = F.sigmoid(self.g(inputs))
+        out = F.sigmoid(self.h(hidden))
         #####################################################################
         #                       END OF YOUR CODE                            #
         #####################################################################
@@ -113,7 +114,9 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
             nan_mask = np.isnan(train_data[user_id].unsqueeze(0).numpy())
             target[0][nan_mask] = output[0][nan_mask]
 
-            loss = torch.sum((output - target) ** 2.)
+            r = 0.5 * model.get_weight_norm()
+
+            loss = torch.sum((output - target) ** 2.) + (lamb * r)
             loss.backward()
 
             train_loss += loss.item()
