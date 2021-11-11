@@ -122,7 +122,7 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
 
             r = 0.5 * model.get_weight_norm()
 
-            loss = torch.sum((output - target) ** 2.) + (lamb * r)
+            loss = torch.sum((output - target) ** 2.)  # + (lamb * r)
             loss.backward()
 
             train_loss += loss.item()
@@ -173,26 +173,24 @@ def main():
     #####################################################################
     # Set model hyperparameters.
     ks = [10, 50, 100, 200, 500]
-    ks = [50, 100, 200]
-    # k = 10
+    k = 100  # TODO
     # model = AutoEncoder(num_question=train_matrix.shape[1], k=k)
 
     # Set optimization hyperparameters.
-    lr = 0.005
-    num_epoch = 30
-    # lambs = [0.001, 0.01, 0.1, 1]
-    lamb = 0.01
+    lr = 0.01  # maybe higher - test full set
+    num_epoch = 15 # tune after k
+    lamb = 0.01  # done
     val = []
     for k in ks:
-        print("k = ", k)
+        print("rate =", lr)
         model = AutoEncoder(num_question=train_matrix.shape[1], k=k)
-        val.append(train(model, lr, lamb, train_matrix, zero_train_matrix,
-          valid_data, num_epoch))
-
-    plt.figure()
+        val.append(train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch))
+        plt.figure()
     for x in val:
         plt.plot(x)
     plt.show()
+
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
