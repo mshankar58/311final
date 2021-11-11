@@ -182,6 +182,8 @@ def main():
         thetas.sort()
         probability.sort()
         plt.plot(thetas, probability)
+    plt.gca().legend(('j1','j2','j3'))
+    plt.title("Probability of The correct response over Theta")
     plt.show()
     #####################################################################
     #                       END OF YOUR CODE                            #
