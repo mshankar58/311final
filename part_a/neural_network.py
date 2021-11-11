@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+
 from utils import *
 from torch.autograd import Variable
 
@@ -70,8 +72,12 @@ class AutoEncoder(nn.Module):
         # Implement the function as described in the docstring.             #
         # Use sigmoid activations for f and g.                              #
         #####################################################################
-        hidden = F.sigmoid(self.g(inputs))
-        out = F.sigmoid(self.h(hidden))
+        hidden = self.g(inputs)
+        m = nn.Sigmoid()
+        hidden = m(hidden)
+        out = self.h(hidden)
+        n = nn.Sigmoid()
+        out = n(out)
         #####################################################################
         #                       END OF YOUR CODE                            #
         #####################################################################
@@ -99,7 +105,7 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
     # Define optimizers and loss function.
     optimizer = optim.SGD(model.parameters(), lr=lr)
     num_student = train_data.shape[0]
-
+    valid = []
     for epoch in range(0, num_epoch):
         train_loss = 0.
 
@@ -123,8 +129,9 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
             optimizer.step()
 
         valid_acc = evaluate(model, zero_train_data, valid_data)
-        print("Epoch: {} \tTraining Cost: {:.6f}\t "
-              "Valid Acc: {}".format(epoch, train_loss, valid_acc))
+        valid.append(valid_acc)
+        print("Epoch: {} \tTraining Cost: {:.6f}\t ""Valid Acc: {}".format(epoch, train_loss, valid_acc))
+    return valid
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -165,16 +172,27 @@ def main():
     # validation set.                                                   #
     #####################################################################
     # Set model hyperparameters.
-    k = None
-    model = None
+    ks = [10, 50, 100, 200, 500]
+    ks = [50, 100, 200]
+    # k = 10
+    # model = AutoEncoder(num_question=train_matrix.shape[1], k=k)
 
     # Set optimization hyperparameters.
-    lr = None
-    num_epoch = None
-    lamb = None
+    lr = 0.005
+    num_epoch = 30
+    # lambs = [0.001, 0.01, 0.1, 1]
+    lamb = 0.01
+    val = []
+    for k in ks:
+        print("k = ", k)
+        model = AutoEncoder(num_question=train_matrix.shape[1], k=k)
+        val.append(train(model, lr, lamb, train_matrix, zero_train_matrix,
+          valid_data, num_epoch))
 
-    train(model, lr, lamb, train_matrix, zero_train_matrix,
-          valid_data, num_epoch)
+    plt.figure()
+    for x in val:
+        plt.plot(x)
+    plt.show()
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
