@@ -161,6 +161,7 @@ def main():
     plt.figure(3)
     plt.plot(neg_log_likeli_list_validation)
     plt.title("Negative likelihood over iterations on validation set")
+    print("Accuracy on Test set", evaluate(test_data, theta, beta))
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
