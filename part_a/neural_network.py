@@ -120,9 +120,9 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
             nan_mask = np.isnan(train_data[user_id].unsqueeze(0).numpy())
             target[0][nan_mask] = output[0][nan_mask]
 
-            r = 0.5 * model.get_weight_norm()
+            # r = 0.5 * model.get_weight_norm()
 
-            loss = torch.sum((output - target) ** 2.) + (lamb * r)
+            loss = torch.sum((output - target) ** 2.) # + (lamb * r)
             loss.backward()
 
             train_loss += loss.item()
@@ -173,26 +173,35 @@ def main():
     #####################################################################
     # Set model hyperparameters.
     ks = [10, 50, 100, 200, 500]
-    ks = [50, 100, 200]
+    # ks = [500]
     # k = 10
     # model = AutoEncoder(num_question=train_matrix.shape[1], k=k)
 
     # Set optimization hyperparameters.
-    lr = 0.005
-    num_epoch = 30
-    # lambs = [0.001, 0.01, 0.1, 1]
-    lamb = 0.01
-    val = []
-    for k in ks:
-        print("k = ", k)
-        model = AutoEncoder(num_question=train_matrix.shape[1], k=k)
-        val.append(train(model, lr, lamb, train_matrix, zero_train_matrix,
-          valid_data, num_epoch))
+    lrs = [0.01, 0.005, 0.001]
+    num_epoch = 100
+    lambs = [0.001, 0.01, 0.1, 1]
+    # lamb = 0.001
 
-    plt.figure()
-    for x in val:
-        plt.plot(x)
-    plt.show()
+    # Tuning for k, learning rate and num_epoch
+    i = 1
+    for k in ks:
+        val = []
+        for lr in lrs:
+            print("k = ", k , "learning rate = ", lr)
+            model = AutoEncoder(num_question=train_matrix.shape[1], k=k)
+            val.append(train(model, lr, None, train_matrix, zero_train_matrix, valid_data, num_epoch))
+
+        plt.figure(i)
+        for x in val:
+            plt.plot(x)
+            plt.gca().legend(('lr = 0.01', 'lr = 0.005', 'lr = 0.001'))
+        plt.title("k = {}".format(k))
+        plt.show()
+        i += 1
+
+    # Tuning for lambda
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
