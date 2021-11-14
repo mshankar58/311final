@@ -176,8 +176,10 @@ def main():
     lr = 0.01
     num_epoch = 41
     lamb = 0.001
-    train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch)
-
+    t = train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch)
+    plt.figure()
+    plt.plot(t)
+    plt.show()
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
