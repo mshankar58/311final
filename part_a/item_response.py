@@ -114,7 +114,6 @@ def irt(data, val_data, lr, iterations):
         print("NLLK: {} \t Score: {}".format(neg_lld_train, score))
         theta, beta = update_theta_beta(data, lr, theta, beta)
 
-    # TODO: You may change the return values to achieve what you want.
     return theta, beta, val_acc_lst, neg_log_likeli_train, neg_log_likeli_validation
 
 
