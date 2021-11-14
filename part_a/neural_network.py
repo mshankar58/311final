@@ -68,7 +68,6 @@ class AutoEncoder(nn.Module):
         :return: user vector.
         """
         #####################################################################
-        # TODO:                                                             #
         # Implement the function as described in the docstring.             #
         # Use sigmoid activations for f and g.                              #
         #####################################################################
@@ -97,7 +96,6 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
     :param num_epoch: int
     :return: None
     """
-    # TODO: Add a regularizer to the cost function. 
     
     # Tell PyTorch you are training the model.
     model.train()
@@ -120,9 +118,9 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
             nan_mask = np.isnan(train_data[user_id].unsqueeze(0).numpy())
             target[0][nan_mask] = output[0][nan_mask]
 
-            # r = 0.5 * model.get_weight_norm()
+            r = 0.5 * model.get_weight_norm()
 
-            loss = torch.sum((output - target) ** 2.) # + (lamb * r)
+            loss = torch.sum((output - target) ** 2.) + (lamb * r)
             loss.backward()
 
             train_loss += loss.item()
@@ -167,40 +165,18 @@ def main():
     zero_train_matrix, train_matrix, valid_data, test_data = load_data()
 
     #####################################################################
-    # TODO:                                                             #
     # Try out 5 different k and select the best k using the             #
     # validation set.                                                   #
     #####################################################################
     # Set model hyperparameters.
-    ks = [10, 50, 100, 200, 500]
-    # ks = [500]
-    # k = 10
-    # model = AutoEncoder(num_question=train_matrix.shape[1], k=k)
+    k = 50
+    model = AutoEncoder(num_question=train_matrix.shape[1], k=k)
 
     # Set optimization hyperparameters.
-    lrs = [0.01, 0.005, 0.001]
-    num_epoch = 100
-    lambs = [0.001, 0.01, 0.1, 1]
-    # lamb = 0.001
-
-    # Tuning for k, learning rate and num_epoch
-    i = 1
-    for k in ks:
-        val = []
-        for lr in lrs:
-            print("k = ", k , "learning rate = ", lr)
-            model = AutoEncoder(num_question=train_matrix.shape[1], k=k)
-            val.append(train(model, lr, None, train_matrix, zero_train_matrix, valid_data, num_epoch))
-
-        plt.figure(i)
-        for x in val:
-            plt.plot(x)
-            plt.gca().legend(('lr = 0.01', 'lr = 0.005', 'lr = 0.001'))
-        plt.title("k = {}".format(k))
-        plt.show()
-        i += 1
-
-    # Tuning for lambda
+    lr = 0.01
+    num_epoch = 41
+    lamb = 0.001
+    train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch)
 
     #####################################################################
     #                       END OF YOUR CODE                            #
