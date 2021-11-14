@@ -1,5 +1,3 @@
-import random
-
 from matplotlib import pyplot as plt
 
 from utils import *
@@ -30,8 +28,8 @@ def neg_log_likelihood(data, theta, beta):
     #####################################################################
     sig = sigmoid(np.array(theta[data['user_id']]) - np.array(beta[data['question_id']]))
     is_correct = np.array(data['is_correct'])
-    l = is_correct*np.log(sig) + ((1-is_correct)*np.log(1-sig))
-    log_lklihood = l.sum()
+    ll = is_correct*np.log(sig) + ((1-is_correct)*np.log(1-sig))
+    log_lklihood = ll.sum()
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -135,8 +133,7 @@ def evaluate(data, theta, beta):
         x = (theta[u] - beta[q]).sum()
         p_a = sigmoid(x)
         pred.append(p_a >= 0.5)
-    return np.sum((data["is_correct"] == np.array(pred))) \
-           / len(data["is_correct"])
+    return np.sum((data["is_correct"] == np.array(pred))) / len(data["is_correct"])
 
 
 def main():
@@ -147,11 +144,11 @@ def main():
     test_data = load_public_test_csv("../data")
 
     #####################################################################
-    # TODO:                                                             #
     # Tune learning rate and number of iterations. With the implemented #
     # code, report the validation and test accuracy.                    #
     #####################################################################
-    theta, beta, acc_list, neg_log_likeli_list_train, neg_log_likeli_list_validation =irt(train_data, val_data, 0.005, 70)
+    theta, beta, acc_list, neg_log_likeli_list_train, neg_log_likeli_list_validation = \
+        irt(train_data, val_data, 0.005, 70)
     plt.figure(1)
     plt.plot(acc_list)
     plt.title("Accuracy over iterations")
@@ -167,7 +164,6 @@ def main():
     #####################################################################
 
     #####################################################################
-    # TODO:                                                             #
     # Implement part (d)                                                #
     #####################################################################
     plt.figure(4)
@@ -182,7 +178,7 @@ def main():
         thetas.sort()
         probability.sort()
         plt.plot(thetas, probability)
-    plt.gca().legend(('j1','j2','j3'))
+    plt.gca().legend(('j1', 'j2', 'j3'))
     plt.title("Probability of The correct response over Theta")
     plt.show()
     #####################################################################
