@@ -49,17 +49,21 @@ class AutoEncoder(nn.Module):
         super(AutoEncoder, self).__init__()
 
         # Define linear functions.
-        self.g = nn.Linear(num_question, k)
-        self.h = nn.Linear(k, num_question)
+        self.hidden1 = nn.Linear(num_question, k)
+        self.hidden2 = nn.Linear(k, k)
+        self.hidden3 = nn.Linear(k, k)
+        self.output = nn.Linear(k, num_question)
 
     def get_weight_norm(self):
         """ Return ||W^1||^2 + ||W^2||^2.
 
         :return: float
         """
-        g_w_norm = torch.norm(self.g.weight, 2) ** 2
-        h_w_norm = torch.norm(self.h.weight, 2) ** 2
-        return g_w_norm + h_w_norm
+        h1_w_norm = torch.norm(self.hidden1.weight, 2) ** 2
+        h2_w_norm = torch.norm(self.hidden2.weight, 2) ** 2
+        h3_w_norm = torch.norm(self.hidden2.weight, 2) ** 2
+        out_w_norm = torch.norm(self.output.weight, 2) ** 2
+        return h1_w_norm + h2_w_norm + h3_w_norm + out_w_norm
 
     def forward(self, inputs):
         """ Return a forward pass given inputs.
@@ -71,12 +75,18 @@ class AutoEncoder(nn.Module):
         # Implement the function as described in the docstring.             #
         # Use sigmoid activations for f and g.                              #
         #####################################################################
-        hidden = self.g(inputs)
+        hidden1 = self.hidden1(inputs)
         m = nn.Sigmoid()
-        hidden = m(hidden)
-        out = self.h(hidden)
+        hidden1 = m(hidden1)
+        hidden2 = self.hidden2(hidden1)
         n = nn.Sigmoid()
-        out = n(out)
+        hidden2 = n(hidden2)
+        hidden3 = self.hidden2(hidden2)
+        p = nn.Sigmoid()
+        hidden3 = p(hidden3)
+        out = self.output(hidden3)
+        q = nn.Sigmoid()
+        out = q(out)
         #####################################################################
         #                       END OF YOUR CODE                            #
         #####################################################################
