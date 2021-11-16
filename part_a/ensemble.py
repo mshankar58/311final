@@ -1,7 +1,6 @@
 import numpy as np
 from sklearn.impute import KNNImputer  # number of neighbors
 from utils import *
-from knn import knn_impute_by_user
 from item_response import irt, sigmoid
 from neural_network import train, AutoEncoder, load_data
 from torch.autograd import Variable
