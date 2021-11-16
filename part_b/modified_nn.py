@@ -76,15 +76,16 @@ class AutoEncoder(nn.Module):
         # Use sigmoid activations for f and g.                              #
         #####################################################################
         hidden1 = self.hidden1(inputs)
-        m = nn.Sigmoid()
+        m = nn.ReLU()
         hidden1 = m(hidden1)
         hidden2 = self.hidden2(hidden1)
-        n = nn.Sigmoid()
+        n = nn.ReLU()
         hidden2 = n(hidden2)
         hidden3 = self.hidden2(hidden2)
-        p = nn.Sigmoid()
+        p = nn.ReLU()
         hidden3 = p(hidden3)
-        out = self.output(hidden3)
+        h_drop = F.dropout(hidden3, p=0.5, training=True)
+        out = self.output(h_drop)
         q = nn.Sigmoid()
         out = q(out)
         #####################################################################
