@@ -285,10 +285,11 @@ def main():
     t_1 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_1, num_epoch)
     # validation accuracy for g_2
     t_2 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_2, num_epoch)
-    print(t_1)
-    # plt.figure()
-    # # plt.plot(t)
-    # plt.show()
+    plt.figure()
+    plt.plot(t_0)
+    plt.plot(t_1)
+    plt.plot(t_2)
+    plt.show()
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
