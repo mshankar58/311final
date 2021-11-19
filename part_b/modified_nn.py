@@ -11,6 +11,97 @@ import torch.utils.data
 import numpy as np
 import torch
 
+train_data = load_train_csv("../data")
+
+
+# modified helper function from utils.py
+def _load_student_csv(path):
+    # A helper function to load the csv file.
+    if not os.path.exists(path):
+        raise Exception("The specified path {} does not exist.".format(path))
+    # Initialize the data.
+    data = {
+        "user_id": [],
+        "gender": []
+    }
+    # Iterate over the row to fill in the data.
+    with open(path, "r") as csv_file:
+        reader = csv.reader(csv_file)
+        for row in reader:
+            try:
+                data["user_id"].append(int(row[0]))
+                data["gender"].append(int(row[1]))
+            except ValueError:
+                # Pass first row.
+                pass
+            except IndexError:
+                # is_correct might not be available.
+                pass
+    return data
+
+
+# modified load function from example in utils.py
+def load_student_meta_csv(root_dir="/data"):
+    """ Load the validation data as a dictionary.
+
+    :param root_dir: str
+    :return: A dictionary {user_id: list, question_id: list, is_correct: list}
+        WHERE
+        user_id: a list of user id.
+        question_id: a list of question id.
+        is_correct: a list of binary value indicating the correctness of
+        (user_id, question_id) pair.
+    """
+    path = os.path.join(root_dir, "student_meta.csv")
+    return _load_student_csv(path)
+
+
+# implemented function: split the dataset by gender
+def split_by_gender(base_path="../data"):
+    # three types of gender (0, 1, 2)
+    # will create three gender dictionaries
+    g_0 = {
+        "user_id": [],
+        "question_id": [],
+        "is_correct": []
+    }
+    g_1 = {
+        "user_id": [],
+        "question_id": [],
+        "is_correct": []
+    }
+    g_2 = {
+        "user_id": [],
+        "question_id": [],
+        "is_correct": []
+    }
+    metadata = load_student_meta_csv(base_path)
+    num_stu = len(metadata["user_id"])
+    for s in range(num_stu):
+        user_id = metadata["user_id"][s]
+        gender = metadata["gender"][s]
+        # type 0
+        if gender == 0:
+            g_0["user_id"].append(user_id)
+        # type 1
+        if gender == 1:
+            g_1["user_id"].append(user_id)
+        # type 2
+        if gender == 2:
+            g_2["user_id"].append(user_id)
+    total_num = len(train_data["user_id"])
+    for i in range(total_num):
+        if train_data["user_id"][i] in g_0["user_id"]:
+            g_0["question_id"].append(train_data["question_id"][i])
+            g_0["is_correct"].append(train_data["is_correct"][i])
+        if train_data["user_id"][i] in g_1["user_id"]:
+            g_1["question_id"].append(train_data["question_id"][i])
+            g_1["is_correct"].append(train_data["is_correct"][i])
+        if train_data["user_id"][i] in g_2["user_id"]:
+            g_2["question_id"].append(train_data["question_id"][i])
+            g_2["is_correct"].append(train_data["is_correct"][i])
+    return g_0, g_1, g_2
+
 
 def load_data(base_path="../data"):
     """ Load the data in PyTorch Tensor.
@@ -173,6 +264,7 @@ def evaluate(model, train_data, valid_data):
 
 
 def main():
+    g_0, g_1, g_2 = split_by_gender()
     zero_train_matrix, train_matrix, valid_data, test_data = load_data()
 
     #####################################################################
@@ -187,10 +279,16 @@ def main():
     lr = 0.01
     num_epoch = 41
     lamb = 0.001
-    t = train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch)
-    plt.figure()
-    plt.plot(t)
-    plt.show()
+    # validation accuracy for g_0
+    t_0 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_0, num_epoch)
+    # validation accuracy for g_1
+    t_1 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_1, num_epoch)
+    # validation accuracy for g_2
+    t_2 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_2, num_epoch)
+    print(t_1)
+    # plt.figure()
+    # # plt.plot(t)
+    # plt.show()
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
