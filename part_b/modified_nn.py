@@ -22,21 +22,21 @@ def _load_student_csv(path):
     # Initialize the data.
     data = {
         "user_id": [],
-        "gender": []
+        "gender": [],
+        "premium_pupil": []
     }
     # Iterate over the row to fill in the data.
     with open(path, "r") as csv_file:
         reader = csv.reader(csv_file)
         for row in reader:
-            try:
+            if reader.line_num != 1:
                 data["user_id"].append(int(row[0]))
                 data["gender"].append(int(row[1]))
-            except ValueError:
-                # Pass first row.
-                pass
-            except IndexError:
-                # is_correct might not be available.
-                pass
+                if row[3] == '':
+                    data["premium_pupil"].append(-1)
+                else:
+                    data["premium_pupil"].append(int(float(row[3])))
+
     return data
 
 
@@ -101,6 +101,55 @@ def split_by_gender(base_path="../data"):
             g_2["question_id"].append(train_data["question_id"][i])
             g_2["is_correct"].append(train_data["is_correct"][i])
     return g_0, g_1, g_2
+
+
+# split by premium pupil
+def split_by_premium(base_path="../data"):
+    # "1.0" true as a premium pupil, "0.0" false
+    # split the data into two dictionaries
+    p_0 = {
+        "user_id": [],
+        "question_id": [],
+        "is_correct": []
+    }
+    p_1 = {
+        "user_id": [],
+        "question_id": [],
+        "is_correct": []
+    }
+    p_2 = {
+        "user_id": [],
+        "question_id": [],
+        "is_correct": []
+    }
+    metadata = load_student_meta_csv(base_path)
+    num_stu = len(metadata["user_id"])
+    for s in range(num_stu):
+        user_id = metadata["user_id"][s]
+        premium_pupil = metadata["premium_pupil"][s]
+        # premium pupil data not available
+        if premium_pupil == - 1:
+            p_2["user_id"].append(user_id)
+        # student is not a premium pupil
+        elif premium_pupil == 0:
+            p_0["user_id"].append(user_id)
+        # student is a premium pupil
+        else:
+            p_1["user_id"].append(user_id)
+
+    total_num = len(train_data["user_id"])
+    for i in range(total_num):
+        if train_data["user_id"][i] in p_0["user_id"]:
+            p_0["question_id"].append(train_data["question_id"][i])
+            p_0["is_correct"].append(train_data["is_correct"][i])
+        if train_data["user_id"][i] in p_1["user_id"]:
+            p_1["question_id"].append(train_data["question_id"][i])
+            p_1["is_correct"].append(train_data["is_correct"][i])
+        if train_data["user_id"][i] in p_2["user_id"]:
+            p_2["question_id"].append(train_data["question_id"][i])
+            p_2["is_correct"].append(train_data["is_correct"][i])
+
+    return p_0, p_1, p_2
 
 
 def load_data(base_path="../data"):
@@ -265,6 +314,8 @@ def evaluate(model, train_data, valid_data):
 
 def main():
     g_0, g_1, g_2 = split_by_gender()
+    # p_0 represents non premium pupil, p_1 premium pupil, p_2 premium pupil data not available
+    p_0, p_1, p_2 = split_by_premium()
     zero_train_matrix, train_matrix, valid_data, test_data = load_data()
 
     #####################################################################
@@ -279,16 +330,23 @@ def main():
     lr = 0.01
     num_epoch = 41
     lamb = 0.001
-    # validation accuracy for g_0
-    t_0 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_0, num_epoch)
-    # validation accuracy for g_1
-    t_1 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_1, num_epoch)
-    # validation accuracy for g_2
-    t_2 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_2, num_epoch)
+    # # validation accuracy for g_0
+    # t_0 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_0, num_epoch)
+    # # validation accuracy for g_1
+    # t_1 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_1, num_epoch)
+    # # validation accuracy for g_2
+    # t_2 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_2, num_epoch)
+
+    # trial with split by premium pupil
+    t_0 = train(model, lr, lamb, train_matrix, zero_train_matrix, p_0, num_epoch)
+    t_1 = train(model, lr, lamb, train_matrix, zero_train_matrix, p_1, num_epoch)
+    t_2 = train(model, lr, lamb, train_matrix, zero_train_matrix, p_2, num_epoch)
+
     plt.figure()
     plt.plot(t_0)
     plt.plot(t_1)
     plt.plot(t_2)
+
     plt.show()
     #####################################################################
     #                       END OF YOUR CODE                            #
