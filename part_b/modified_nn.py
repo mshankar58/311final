@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import scipy.sparse
 
 from utils import *
 from torch.autograd import Variable
@@ -57,24 +58,19 @@ def load_student_meta_csv(root_dir="/data"):
 
 
 # implemented function: split the dataset by gender
-def split_by_gender(base_path="../data"):
+def split_by_gender(train_matrix, base_path="../data"):
     # three types of gender (0, 1, 2)
     # will create three gender dictionaries
     g_0 = {
         "user_id": [],
-        "question_id": [],
-        "is_correct": []
     }
     g_1 = {
         "user_id": [],
-        "question_id": [],
-        "is_correct": []
     }
     g_2 = {
         "user_id": [],
-        "question_id": [],
-        "is_correct": []
     }
+
     metadata = load_student_meta_csv(base_path)
     num_stu = len(metadata["user_id"])
     for s in range(num_stu):
@@ -90,16 +86,25 @@ def split_by_gender(base_path="../data"):
         if gender == 2:
             g_2["user_id"].append(user_id)
     total_num = len(train_data["user_id"])
+    matrix_0 = None
+    matrix_1 = None
+    matrix_2 = None
     for i in range(total_num):
-        if train_data["user_id"][i] in g_0["user_id"]:
-            g_0["question_id"].append(train_data["question_id"][i])
-            g_0["is_correct"].append(train_data["is_correct"][i])
-        if train_data["user_id"][i] in g_1["user_id"]:
-            g_1["question_id"].append(train_data["question_id"][i])
-            g_1["is_correct"].append(train_data["is_correct"][i])
-        if train_data["user_id"][i] in g_2["user_id"]:
-            g_2["question_id"].append(train_data["question_id"][i])
-            g_2["is_correct"].append(train_data["is_correct"][i])
+        if i in g_0["user_id"]:
+            if matrix_0 is None:
+                matrix_0 = train_matrix[i]
+            else:
+                scipy.sparse.vstack([matrix_0, train_matrix[i]])
+        if i in g_1["user_id"]:
+            if matrix_1 is None:
+                matrix_1 = train_matrix[i]
+            else:
+                scipy.sparse.vstack([matrix_1, train_matrix[i]])
+        if i in g_2["user_id"]:
+            if matrix_2 is None:
+                matrix_2 = train_matrix[i]
+            else:
+                scipy.sparse.vstack([matrix_2, train_matrix[i]])
     return g_0, g_1, g_2
 
 
@@ -203,7 +208,7 @@ class AutoEncoder(nn.Module):
         h2_w_norm = torch.norm(self.hidden2.weight, 2) ** 2
         h3_w_norm = torch.norm(self.hidden2.weight, 2) ** 2
         out_w_norm = torch.norm(self.output.weight, 2) ** 2
-        return h1_w_norm + h2_w_norm + h3_w_norm + out_w_norm
+        return h1_w_norm + h2_w_norm + out_w_norm
 
     def forward(self, inputs):
         """ Return a forward pass given inputs.
@@ -234,7 +239,7 @@ class AutoEncoder(nn.Module):
         return out
 
 
-def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
+def train(model, lr, lamb, train_matrix, zero_train_data, valid_data, num_epoch):
     """ Train the neural network, where the objective also includes
     a regularizer.
 
@@ -253,7 +258,7 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
 
     # Define optimizers and loss function.
     optimizer = optim.SGD(model.parameters(), lr=lr)
-    num_student = train_data.shape[0]
+    num_student = len(train_matrix)
     valid = []
     for epoch in range(0, num_epoch):
         train_loss = 0.
@@ -266,7 +271,7 @@ def train(model, lr, lamb, train_data, zero_train_data, valid_data, num_epoch):
             output = model(inputs)
 
             # Mask the target to only compute the gradient of valid entries.
-            nan_mask = np.isnan(train_data[user_id].unsqueeze(0).numpy())
+            nan_mask = np.isnan(train_matrix[user_id].unsqueeze(0).numpy())
             target[0][nan_mask] = output[0][nan_mask]
 
             r = 0.5 * model.get_weight_norm()
@@ -313,10 +318,10 @@ def evaluate(model, train_data, valid_data):
 
 
 def main():
-    g_0, g_1, g_2 = split_by_gender()
     # p_0 represents non premium pupil, p_1 premium pupil, p_2 premium pupil data not available
-    p_0, p_1, p_2 = split_by_premium()
+    # p_0, p_1, p_2 = split_by_premium()
     zero_train_matrix, train_matrix, valid_data, test_data = load_data()
+    g_0, g_1, g_2 = split_by_gender(train_matrix=train_matrix)
 
     #####################################################################
     # Try out 5 different k and select the best k using the             #
@@ -327,25 +332,26 @@ def main():
     model = AutoEncoder(num_question=train_matrix.shape[1], k=k)
 
     # Set optimization hyperparameters.
-    lr = 0.01
-    num_epoch = 41
+    lr = 0.001
+    num_epoch = 2
     lamb = 0.001
-    # # validation accuracy for g_0
-    # t_0 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_0, num_epoch)
-    # # validation accuracy for g_1
-    # t_1 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_1, num_epoch)
-    # # validation accuracy for g_2
-    # t_2 = train(model, lr, lamb, train_matrix, zero_train_matrix, g_2, num_epoch)
+    # validation accuracy for g_0
+    t_0 = train(model, lr, lamb, g_0, zero_train_matrix, valid_data, num_epoch)
+    # validation accuracy for g_1
+    # t_1 = train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch)
+    # validation accuracy for g_2
+    # t_2 = train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch)
 
     # trial with split by premium pupil
-    t_0 = train(model, lr, lamb, train_matrix, zero_train_matrix, p_0, num_epoch)
-    t_1 = train(model, lr, lamb, train_matrix, zero_train_matrix, p_1, num_epoch)
-    t_2 = train(model, lr, lamb, train_matrix, zero_train_matrix, p_2, num_epoch)
+    # t_0 = train(model, lr, lamb, train_matrix, zero_train_matrix, p_0, num_epoch)
+    # t_1 = train(model, lr, lamb, train_matrix, zero_train_matrix, p_1, num_epoch)
+    # t_2 = train(model, lr, lamb, train_matrix, zero_train_matrix, p_2, num_epoch)
 
     plt.figure()
     plt.plot(t_0)
-    plt.plot(t_1)
-    plt.plot(t_2)
+
+    # plt.plot(t_1)
+    # plt.plot(t_2)
 
     plt.show()
     #####################################################################
