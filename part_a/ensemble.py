@@ -16,165 +16,101 @@ def main():
     zero_train_matrix_nn, train_matrix_nn, valid_data_nn, test_data_nn = load_data("../data")
 
     # split the train data into 3 datasets with size = train data
-    train_dic_0 = {
-        "user_id": [],
-        "question_id": [],
-        "is_correct": []
-    }
-    train_matrix_0 = None
-    zero_train_matrix_0 = None
-    for n in range(len(train_data["user_id"])):
-        i = np.random.randint(len(train_data["user_id"]))
-        train_dic_0["user_id"].append(train_data["user_id"][i])
-        train_dic_0["question_id"].append(train_data["question_id"][i])
-        train_dic_0["is_correct"].append(train_data["is_correct"][i])
-    for n in range(train_matrix_nn.shape[0]):
-        i = np.random.randint(train_matrix_nn.shape[0])
-        if train_matrix_0 is None:
-            train_matrix_0 = train_matrix_nn[i]
-            zero_train_matrix_0 = zero_train_matrix_nn[i]
-        else:
-            train_matrix_0 = torch.vstack((train_matrix_0, train_matrix_nn[i]))
-            zero_train_matrix_0 = torch.vstack((zero_train_matrix_0, zero_train_matrix_nn[i]))
-    train_dic_1 = {
-        "user_id": [],
-        "question_id": [],
-        "is_correct": []
-    }
-    train_matrix_1 = None
-    zero_train_matrix_1 = None
-    for n in range(len(train_data["user_id"])):
-        i = np.random.randint(len(train_data["user_id"]))
-        train_dic_1["user_id"].append(train_data["user_id"][i])
-        train_dic_1["question_id"].append(train_data["question_id"][i])
-        train_dic_1["is_correct"].append(train_data["is_correct"][i])
-    for n in range(train_matrix_nn.shape[0]):
-        i = np.random.randint(train_matrix_nn.shape[0])
-        if train_matrix_1 is None:
-            train_matrix_1 = train_matrix_nn[i]
-            zero_train_matrix_1 = zero_train_matrix_nn[i]
-        else:
-            train_matrix_1 = torch.vstack((train_matrix_1, train_matrix_nn[i]))
-            zero_train_matrix_1 = torch.vstack((zero_train_matrix_1, zero_train_matrix_nn[i]))
-    train_dic_2 = {
-        "user_id": [],
-        "question_id": [],
-        "is_correct": []
-    }
-    train_matrix_2 = None
-    zero_train_matrix_2 = None
-    for n in range(len(train_data["user_id"])):
-        i = np.random.randint(len(train_data["user_id"]))
-        train_dic_2["user_id"].append(train_data["user_id"][i])
-        train_dic_2["question_id"].append(train_data["question_id"][i])
-        train_dic_2["is_correct"].append(train_data["is_correct"][i])
+    number_of_bags = 3
 
-    for n in range(train_matrix_nn.shape[0]):
-        i = np.random.randint(train_matrix_nn.shape[0])
-        if train_matrix_2 is None:
-            train_matrix_2 = train_matrix_nn[i]
-            zero_train_matrix_2 = zero_train_matrix_nn[i]
-        else:
-            train_matrix_2 = torch.vstack((train_matrix_2, train_matrix_nn[i]))
-            zero_train_matrix_2 = torch.vstack((zero_train_matrix_2, zero_train_matrix_nn[i]))
-    # knn
-    nbrs = KNNImputer(n_neighbors=11)
-    mat = nbrs.fit_transform(train_matrix_0)
-    pred_knn_0 = []
-    for i in range(len(valid_data["user_id"])):
-        cur_user_id = valid_data["user_id"][i]
-        cur_question_id = valid_data["question_id"][i]
-        pred_knn_0.append(mat[cur_user_id, cur_question_id])
-    print("KNN 0 complete")
-    mat = nbrs.fit_transform(train_matrix_1)
-    pred_knn_1 = []
-    for i in range(len(valid_data["user_id"])):
-        cur_user_id = valid_data["user_id"][i]
-        cur_question_id = valid_data["question_id"][i]
-        pred_knn_1.append(mat[cur_user_id, cur_question_id])
-    print("KNN 1 complete")
-    mat = nbrs.fit_transform(train_matrix_1)
-    pred_knn_2 = []
-    for i in range(len(valid_data["user_id"])):
-        cur_user_id = valid_data["user_id"][i]
-        cur_question_id = valid_data["question_id"][i]
-        pred_knn_2.append(mat[cur_user_id, cur_question_id])
-    print("KNN 2 complete")
+    train_dic = []
+    train_matrix = []
+    zero_train_matrix = []
+    for bagging_index in range(number_of_bags):
+        train_dic.append({
+            "user_id": [],
+            "question_id": [],
+            "is_correct": []
+        })
+        dic_bag = train_dic[bagging_index]
 
-    # irt
-    theta, beta, val_acc_lst, NLL_train, NLL_validation = irt(train_dic_0, valid_data, 0.005, 24)
-    pred_irt_0 = []
-    for i, q in enumerate(valid_data["question_id"]):
-        u = valid_data["user_id"][i]
-        x = (theta[u] - beta[q]).sum()
-        p_a = sigmoid(x)
-        pred_irt_0.append(p_a)
-    print("IRT 0 complete")
-    theta, beta, val_acc_lst, NLL_train, NLL_validation = irt(train_dic_1, valid_data, 0.005, 24)
-    pred_irt_1 = []
-    for i, q in enumerate(valid_data["question_id"]):
-        u = valid_data["user_id"][i]
-        x = (theta[u] - beta[q]).sum()
-        p_a = sigmoid(x)
-        pred_irt_1.append(p_a)
-    print("IRT 1 complete")
-    theta, beta, val_acc_lst, NLL_train, NLL_validation = irt(train_dic_2, valid_data, 0.005, 24)
-    pred_irt_2 = []
-    for i, q in enumerate(valid_data["question_id"]):
-        u = valid_data["user_id"][i]
-        x = (theta[u] - beta[q]).sum()
-        p_a = sigmoid(x)
-        pred_irt_2.append(p_a)
-    print("IRT 2 complete")
+        train_matrix.append(torch.empty(0, train_matrix_nn.shape[1]))
+        zero_train_matrix.append(torch.empty(0, zero_train_matrix_nn.shape[1]))
 
-    # neural net
-    model = AutoEncoder(num_question=train_matrix_nn.shape[1], k=50)
-    train(model, 0.01, 0.001, train_matrix_nn, zero_train_matrix_nn, valid_data_nn, 41)
+        for n in range(len(train_data["user_id"])):
+            random_index = np.random.randint(len(train_data["user_id"]))
+            dic_bag["user_id"].append(train_data["user_id"][random_index])
+            dic_bag["question_id"].append(train_data["question_id"][random_index])
+            dic_bag["is_correct"].append(train_data["is_correct"][random_index])
+
+        for n in range(train_matrix_nn.shape[0]):
+            random_index = np.random.randint(train_matrix_nn.shape[0])
+            train_matrix[bagging_index] = torch.vstack((train_matrix[bagging_index], train_matrix_nn[random_index]))
+            zero_train_matrix[bagging_index] = torch.vstack((zero_train_matrix[bagging_index], zero_train_matrix_nn[random_index]))
+
+    # train models
+    pred_knn = []
+    pred_irt = []
     pred_nn = []
-    for i, u in enumerate(valid_data_nn["user_id"]):
-        inputs = Variable(zero_train_matrix_nn[u]).unsqueeze(0)
-        output = model(inputs)
-        guess = output[0][valid_data_nn["question_id"][i]].item()
-        pred_nn.append(guess)
-    print("Neural Net 0 complete")
-    # model = AutoEncoder(num_question=train_matrix_1.shape[1], k=50)
-    # train(model, 0.01, 0.001, train_matrix_1, zero_train_matrix_1, valid_data_nn, 41)
-    # pred_nn_1 = []
-    # for i, u in enumerate(valid_data_nn["user_id"]):
-    #     inputs = Variable(zero_train_matrix_1[u]).unsqueeze(0)
-    #     output = model(inputs)
-    #     guess = output[0][valid_data_nn["question_id"][i]].item()
-    #     pred_nn_1.append(guess)
-    # print("Neural Net 1 complete")
-    # model = AutoEncoder(num_question=train_matrix_2.shape[1], k=50)
-    # train(model, 0.01, 0.001, train_matrix_2, zero_train_matrix_2, valid_data_nn, 41)
-    # pred_nn_2 = []
-    # for i, u in enumerate(valid_data_nn["user_id"]):
-    #     inputs = Variable(zero_train_matrix_2[u]).unsqueeze(0)
-    #     output = model(inputs)
-    #     guess = output[0][valid_data_nn["question_id"][i]].item()
-    #     pred_nn_2.append(guess)
-    # print("Neural Net 2 complete")
+    for i in range(number_of_bags):
+        # knn
+        nbrs = KNNImputer(n_neighbors=11)
+        mat = nbrs.fit_transform(train_matrix[i])
+        acc = sparse_matrix_evaluate(valid_data, mat)
+        print("Validation Accuracy: {}".format(acc))
+        pred_knn.append([])
+        predicted_knn_correctness = pred_knn[i]
+
+        for student in range(len(valid_data["user_id"])):
+            cur_user_id = valid_data["user_id"][student]
+            cur_question_id = valid_data["question_id"][student]
+            predicted_knn_correctness.append(mat[cur_user_id, cur_question_id])
+        print("KNN " + str(i) + " complete")
+
+
+        # irt
+        theta, beta, val_acc_lst, NLL_train, NLL_validation = irt(train_dic[i], valid_data, 0.005, 24)
+        pred_irt.append([])
+        predicted_irt_correctness = pred_knn[i]
+        for student, q in enumerate(valid_data["question_id"]):
+            u = valid_data["user_id"][student]
+            x = (theta[u] - beta[q]).sum()
+            p_a = sigmoid(x)
+            predicted_irt_correctness.append(p_a)
+        print("IRT " + str(i) + " complete")
+
+
+        # neural net
+        pred_nn.append([])
+        predicted_nn_correctness = pred_nn[i]
+        model = AutoEncoder(num_question=train_matrix[i].shape[1], k=50)
+        train(model, 0.01, 0.001, train_matrix[i], zero_train_matrix[i], valid_data_nn, 20)
+        for j, u in enumerate(valid_data_nn["user_id"]):
+            inputs = Variable(zero_train_matrix[i][u]).unsqueeze(0)
+            output = model(inputs)
+            guess = output[0][valid_data_nn["question_id"][j]].item()
+            predicted_nn_correctness.append(guess)
+        print("Neural Net " + str(i) + " complete")
 
     # average the predictions
-    pred_knn = np.add(np.add(pred_knn_0, pred_knn_1), pred_knn_2)
-    pred_irt = np.add(np.add(pred_irt_0, pred_irt_1), pred_irt_2)
-    # pred_nn = np.add(np.add(pred_nn_0, pred_nn_1), pred_nn_2)
+    average_pred_knn = pred_knn[0]
+    average_pred_irt = pred_irt[0]
+    average_pred_nn = pred_nn[0]
+    for i in range(1, number_of_bags):
+        average_pred_knn = np.add(average_pred_knn, pred_knn[i])
+        average_pred_irt = np.add(average_pred_irt, pred_irt[i])
+        average_pred_nn = np.add(average_pred_nn, pred_nn[i])
+
     final_prob = np.add(np.add(pred_knn, pred_irt), pred_nn)
-    final_prob = np.array(final_prob) / 7
+    final_prob = np.array(final_prob) / (3 * number_of_bags)
 
     # evaluate the predictions
     final_pred = []
-    for i in range(final_prob.size):
-        if final_prob[i] >= 0.5:
+    for bagging_index in range(final_prob.size):
+        if final_prob[bagging_index] >= 0.5:
             final_pred.append(1.)
         else:
             final_pred.append(0.)
 
     # tally totals
     total_correct = 0
-    for i in range(len(final_pred)):
-        if final_pred[i] == valid_data['is_correct'][i]:
+    for bagging_index in range(len(final_pred)):
+        if final_pred[bagging_index] == valid_data['is_correct'][bagging_index]:
             total_correct += 1
     print("FINAL ACCURACY:", total_correct / len(final_pred))
 
