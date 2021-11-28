@@ -63,6 +63,18 @@ def update_theta_beta(data, lr, theta, beta):
     theta_exp = np.exp(theta)
     beta_exp = np.exp(beta)
 
+    # optimize for beta
+    for sample_index in range(number_of_samples):
+        user_id = data["user_id"][sample_index]
+        question_id = data["question_id"][sample_index]
+        c_ij = data["is_correct"][sample_index]
+
+        b_exp = beta_exp[question_id] / (beta_exp[question_id] + theta_exp[user_id])
+        th_exp = theta_exp[user_id] / (beta_exp[question_id] + theta_exp[user_id])
+
+        grad_beta[question_id] += (1 - c_ij) * th_exp - c_ij * b_exp
+    beta += lr * grad_beta
+    # optimize for theta
     for sample_index in range(number_of_samples):
         user_id = data["user_id"][sample_index]
         question_id = data["question_id"][sample_index]
@@ -72,10 +84,8 @@ def update_theta_beta(data, lr, theta, beta):
         th_exp = theta_exp[user_id] / (beta_exp[question_id] + theta_exp[user_id])
 
         grad_theta[user_id] += c_ij * b_exp - (1 - c_ij) * th_exp
-        grad_beta[question_id] += (1 - c_ij) * th_exp - c_ij * b_exp
-
     theta += lr * grad_theta
-    beta += lr * grad_beta
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -106,12 +116,18 @@ def irt(data, val_data, lr, iterations):
         neg_log_likeli_train.append(neg_lld_train)
 
         neg_lld_validation = neg_log_likelihood(val_data, theta=theta, beta=beta)
+        if neg_log_likeli_validation and neg_lld_validation > neg_log_likeli_validation[-1]:
+            print(i)
+            return theta, beta, val_acc_lst, neg_log_likeli_train, neg_log_likeli_validation
+
         neg_log_likeli_validation.append(neg_lld_validation)
 
         score = evaluate(data=val_data, theta=theta, beta=beta)
         val_acc_lst.append(score)
 
         print("NLLK: {} \t Score: {}".format(neg_lld_train, score))
+        theta, beta = update_theta_beta(data, lr, theta, beta)
+        theta, beta = update_theta_beta(data, lr, theta, beta)
         theta, beta = update_theta_beta(data, lr, theta, beta)
 
     return theta, beta, val_acc_lst, neg_log_likeli_train, neg_log_likeli_validation
@@ -147,7 +163,7 @@ def main():
     # code, report the validation and test accuracy.                    #
     #####################################################################
     theta, beta, acc_list, neg_log_likeli_list_train, neg_log_likeli_list_validation = \
-        irt(train_data, val_data, 0.005, 70)
+        irt(train_data, val_data, 0.005, 50)
     plt.figure(1)
     plt.plot(acc_list)
     plt.title("Accuracy over iterations")
