@@ -85,31 +85,32 @@ def split_by_gender(train_matrix, base_path="../data"):
         # type 2
         if gender == 2:
             g_2["user_id"].append(user_id)
-    total_num = len(train_data["user_id"])
+    total_num = train_matrix.shape[0]
     matrix_0 = None
     matrix_1 = None
     matrix_2 = None
     for i in range(total_num):
-        if i in g_0["user_id"]:
+        student = metadata["user_id"][i]
+        if student in g_0["user_id"]:
             if matrix_0 is None:
-                matrix_0 = train_matrix[i]
+                matrix_0 = scipy.sparse.csr_matrix(train_matrix[i])
             else:
-                scipy.sparse.vstack([matrix_0, train_matrix[i]])
-        if i in g_1["user_id"]:
+                scipy.sparse.vstack([matrix_0, scipy.sparse.csr_matrix(train_matrix[i])])
+        if student in g_1["user_id"]:
             if matrix_1 is None:
-                matrix_1 = train_matrix[i]
+                matrix_1 = scipy.sparse.csr_matrix(train_matrix[i])
             else:
-                scipy.sparse.vstack([matrix_1, train_matrix[i]])
-        if i in g_2["user_id"]:
+                scipy.sparse.vstack([matrix_1, scipy.sparse.csr_matrix(train_matrix[i])])
+        if student in g_2["user_id"]:
             if matrix_2 is None:
-                matrix_2 = train_matrix[i]
+                matrix_2 = scipy.sparse.csr_matrix(train_matrix[i])
             else:
-                scipy.sparse.vstack([matrix_2, train_matrix[i]])
+                scipy.sparse.vstack([matrix_2, scipy.sparse.csr_matrix(train_matrix[i])])
     return g_0, g_1, g_2
 
 
 # split by premium pupil
-def split_by_premium(base_path="../data"):
+def split_by_premium(train_matrix, base_path="../data"):
     # "1.0" true as a premium pupil, "0.0" false
     # split the data into two dictionaries
     p_0 = {
@@ -127,6 +128,9 @@ def split_by_premium(base_path="../data"):
         "question_id": [],
         "is_correct": []
     }
+    matrix_0 = None
+    matrix_1 = None
+    matrix_2 = None
     metadata = load_student_meta_csv(base_path)
     num_stu = len(metadata["user_id"])
     for s in range(num_stu):
@@ -142,19 +146,23 @@ def split_by_premium(base_path="../data"):
         else:
             p_1["user_id"].append(user_id)
 
-    total_num = len(train_data["user_id"])
-    for i in range(total_num):
-        if train_data["user_id"][i] in p_0["user_id"]:
-            p_0["question_id"].append(train_data["question_id"][i])
-            p_0["is_correct"].append(train_data["is_correct"][i])
-        if train_data["user_id"][i] in p_1["user_id"]:
-            p_1["question_id"].append(train_data["question_id"][i])
-            p_1["is_correct"].append(train_data["is_correct"][i])
-        if train_data["user_id"][i] in p_2["user_id"]:
-            p_2["question_id"].append(train_data["question_id"][i])
-            p_2["is_correct"].append(train_data["is_correct"][i])
+    for student in p_0["user_id"]:
+        if matrix_0 is None:
+            matrix_0 = train_matrix[student]
+        else:
+            torch.vstack((matrix_0, train_matrix[student]))
+    for student in p_1["user_id"]:
+        if matrix_1 is None:
+            matrix_1 = train_matrix[student]
+        else:
+            torch.vstack((matrix_1, train_matrix[student]))
+    for student in p_2["user_id"]:
+        if matrix_2 is None:
+            matrix_2 = train_matrix[student]
+        else:
+            torch.vstack((matrix_2, train_matrix[student]))
 
-    return p_0, p_1, p_2
+    return matrix_0, matrix_1, matrix_2
 
 
 def load_data(base_path="../data"):
@@ -223,14 +231,18 @@ class AutoEncoder(nn.Module):
         hidden1 = self.hidden1(inputs)
         m = nn.ReLU()
         hidden1 = m(hidden1)
+
         hidden2 = self.hidden2(hidden1)
         n = nn.ReLU()
         hidden2 = n(hidden2)
-        hidden3 = self.hidden2(hidden2)
-        p = nn.ReLU()
-        hidden3 = p(hidden3)
-        h_drop = F.dropout(hidden3, p=0.5, training=True)
-        out = self.output(h_drop)
+
+        # hidden3 = self.hidden2(hidden2)
+        # p = nn.ReLU()
+        # hidden3 = p(hidden3)
+
+
+        # h_drop = F.dropout(hidden3, p=0.5, training=True)
+        out = self.output(hidden2)
         q = nn.Sigmoid()
         out = q(out)
         #####################################################################
@@ -252,13 +264,13 @@ def train(model, lr, lamb, train_matrix, zero_train_data, valid_data, num_epoch)
     :param num_epoch: int
     :return: None
     """
-    
+
     # Tell PyTorch you are training the model.
     model.train()
 
     # Define optimizers and loss function.
     optimizer = optim.SGD(model.parameters(), lr=lr)
-    num_student = len(train_matrix)
+    num_student = train_matrix.shape[0]
     valid = []
     for epoch in range(0, num_epoch):
         train_loss = 0.
@@ -319,9 +331,9 @@ def evaluate(model, train_data, valid_data):
 
 def main():
     # p_0 represents non premium pupil, p_1 premium pupil, p_2 premium pupil data not available
-    # p_0, p_1, p_2 = split_by_premium()
     zero_train_matrix, train_matrix, valid_data, test_data = load_data()
-    g_0, g_1, g_2 = split_by_gender(train_matrix=train_matrix)
+    # m_0, m_1, m_2 = split_by_premium(train_matrix)
+    # g_0, g_1, g_2 = split_by_gender(train_matrix=train_matrix)
 
     #####################################################################
     # Try out 5 different k and select the best k using the             #
@@ -332,27 +344,26 @@ def main():
     model = AutoEncoder(num_question=train_matrix.shape[1], k=k)
 
     # Set optimization hyperparameters.
-    lr = 0.001
-    num_epoch = 2
+    lr = 0.01
+    num_epoch = 20
     lamb = 0.001
     # validation accuracy for g_0
-    t_0 = train(model, lr, lamb, g_0, zero_train_matrix, valid_data, num_epoch)
+    # t_0 = train(model, lr, lamb, g_0, zero_train_matrix, valid_data, num_epoch)
     # validation accuracy for g_1
     # t_1 = train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch)
     # validation accuracy for g_2
     # t_2 = train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch)
 
     # trial with split by premium pupil
-    # t_0 = train(model, lr, lamb, train_matrix, zero_train_matrix, p_0, num_epoch)
-    # t_1 = train(model, lr, lamb, train_matrix, zero_train_matrix, p_1, num_epoch)
-    # t_2 = train(model, lr, lamb, train_matrix, zero_train_matrix, p_2, num_epoch)
+    t_0 = train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch)
+    # t_1 = train(model, lr, lamb, m_1, zero_train_matrix, valid_data, num_epoch)
+    # t_2 = train(model, lr, lamb, m_2, zero_train_matrix, valid_data, num_epoch)
 
     plt.figure()
     plt.plot(t_0)
-
     # plt.plot(t_1)
     # plt.plot(t_2)
-
+    plt.title("Accuracy over iterations on validation set")
     plt.show()
     #####################################################################
     #                       END OF YOUR CODE                            #
