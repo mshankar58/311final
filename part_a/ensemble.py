@@ -66,7 +66,7 @@ def main():
         # irt
         theta, beta, val_acc_lst, NLL_train, NLL_validation = irt(train_dic[i], valid_data, 0.005, 24)
         pred_irt.append([])
-        predicted_irt_correctness = pred_knn[i]
+        predicted_irt_correctness = pred_irt[i]
         for student, q in enumerate(valid_data["question_id"]):
             u = valid_data["user_id"][student]
             x = (theta[u] - beta[q]).sum()
@@ -79,7 +79,7 @@ def main():
         pred_nn.append([])
         predicted_nn_correctness = pred_nn[i]
         model = AutoEncoder(num_question=train_matrix[i].shape[1], k=50)
-        train(model, 0.01, 0.001, train_matrix[i], zero_train_matrix[i], valid_data_nn, 20)
+        train(model, 0.01, 0.001, train_matrix[i], zero_train_matrix[i], valid_data_nn, 10)
         for j, u in enumerate(valid_data_nn["user_id"]):
             inputs = Variable(zero_train_matrix[i][u]).unsqueeze(0)
             output = model(inputs)
@@ -96,7 +96,7 @@ def main():
         average_pred_irt = np.add(average_pred_irt, pred_irt[i])
         average_pred_nn = np.add(average_pred_nn, pred_nn[i])
 
-    final_prob = np.add(np.add(pred_knn, pred_irt), pred_nn)
+    final_prob = np.add(np.add(average_pred_knn, average_pred_irt), average_pred_nn)
     final_prob = np.array(final_prob) / (3 * number_of_bags)
 
     # evaluate the predictions
@@ -109,10 +109,10 @@ def main():
 
     # tally totals
     total_correct = 0
-    for bagging_index in range(len(final_pred)):
+    for bagging_index in range(len(valid_data['is_correct'])):
         if final_pred[bagging_index] == valid_data['is_correct'][bagging_index]:
             total_correct += 1
-    print("FINAL ACCURACY:", total_correct / len(final_pred))
+    print("FINAL ACCURACY:", total_correct / len(valid_data['is_correct']))
 
 
 if __name__ == "__main__":

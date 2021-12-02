@@ -58,7 +58,7 @@ def load_student_meta_csv(root_dir="/data"):
 
 
 # implemented function: split the dataset by gender
-def split_by_gender(train_matrix, base_path="../data"):
+def split_by_gender(train_matrix, zero_train_matrix, base_path="../data"):
     # three types of gender (0, 1, 2)
     # will create three gender dictionaries
     g_0 = {
@@ -87,30 +87,40 @@ def split_by_gender(train_matrix, base_path="../data"):
             g_2["user_id"].append(user_id)
     total_num = train_matrix.shape[0]
     matrix_0 = None
+    zero_matrix_0 = None
     matrix_1 = None
+    zero_matrix_1 = None
     matrix_2 = None
+    zero_matrix_2 = None
     for i in range(total_num):
         student = metadata["user_id"][i]
         if student in g_0["user_id"]:
             if matrix_0 is None:
-                matrix_0 = scipy.sparse.csr_matrix(train_matrix[i])
+                matrix_0 = train_matrix[student]
+                zero_matrix_0 = zero_train_matrix[student]
             else:
-                scipy.sparse.vstack([matrix_0, scipy.sparse.csr_matrix(train_matrix[i])])
+                matrix_0 = torch.vstack((matrix_0, train_matrix[student]))
+                zero_matrix_0 = torch.vstack((zero_matrix_0, zero_train_matrix[student]))
         if student in g_1["user_id"]:
             if matrix_1 is None:
-                matrix_1 = scipy.sparse.csr_matrix(train_matrix[i])
+                matrix_1 = train_matrix[student]
+                zero_matrix_1 = zero_train_matrix[student]
             else:
-                scipy.sparse.vstack([matrix_1, scipy.sparse.csr_matrix(train_matrix[i])])
+                matrix_1 = torch.vstack((matrix_1, train_matrix[student]))
+                zero_matrix_1 = torch.vstack((zero_matrix_1, zero_train_matrix[student]))
         if student in g_2["user_id"]:
             if matrix_2 is None:
-                matrix_2 = scipy.sparse.csr_matrix(train_matrix[i])
+                matrix_2 = train_matrix[student]
+                zero_matrix_2 = zero_train_matrix[student]
             else:
-                scipy.sparse.vstack([matrix_2, scipy.sparse.csr_matrix(train_matrix[i])])
-    return g_0, g_1, g_2
+                matrix_2 = torch.vstack((matrix_2, train_matrix[student]))
+                zero_matrix_2 = torch.vstack((zero_matrix_2, zero_train_matrix[student]))
+
+    return matrix_0,  matrix_1, matrix_2, zero_matrix_0, zero_matrix_1,  zero_matrix_2
 
 
 # split by premium pupil
-def split_by_premium(train_matrix, base_path="../data"):
+def split_by_premium(train_matrix, zero_train_matrix, base_path="../data"):
     # "1.0" true as a premium pupil, "0.0" false
     # split the data into two dictionaries
     p_0 = {
@@ -129,8 +139,11 @@ def split_by_premium(train_matrix, base_path="../data"):
         "is_correct": []
     }
     matrix_0 = None
+    zero_matrix_0 = None
     matrix_1 = None
+    zero_matrix_1 = None
     matrix_2 = None
+    zero_matrix_2 = None
     metadata = load_student_meta_csv(base_path)
     num_stu = len(metadata["user_id"])
     for s in range(num_stu):
@@ -149,20 +162,26 @@ def split_by_premium(train_matrix, base_path="../data"):
     for student in p_0["user_id"]:
         if matrix_0 is None:
             matrix_0 = train_matrix[student]
+            zero_matrix_0 = zero_train_matrix[student]
         else:
-            torch.vstack((matrix_0, train_matrix[student]))
+            matrix_0 = torch.vstack((matrix_0, train_matrix[student]))
+            zero_matrix_0 = torch.vstack((zero_matrix_0, zero_train_matrix[student]))
     for student in p_1["user_id"]:
         if matrix_1 is None:
             matrix_1 = train_matrix[student]
+            zero_matrix_1 = zero_train_matrix[student]
         else:
-            torch.vstack((matrix_1, train_matrix[student]))
+            matrix_1 = torch.vstack((matrix_1, train_matrix[student]))
+            zero_matrix_1 = torch.vstack((zero_matrix_1, zero_train_matrix[student]))
     for student in p_2["user_id"]:
         if matrix_2 is None:
             matrix_2 = train_matrix[student]
+            zero_matrix_2 = zero_train_matrix[student]
         else:
-            torch.vstack((matrix_2, train_matrix[student]))
+            matrix_2 = torch.vstack((matrix_2, train_matrix[student]))
+            zero_matrix_2 = torch.vstack((zero_matrix_2, zero_train_matrix[student]))
 
-    return matrix_0, matrix_1, matrix_2
+    return matrix_0, matrix_1, matrix_2, zero_matrix_0, zero_matrix_1, zero_matrix_2
 
 
 def load_data(base_path="../data"):
@@ -216,7 +235,7 @@ class AutoEncoder(nn.Module):
         h2_w_norm = torch.norm(self.hidden2.weight, 2) ** 2
         h3_w_norm = torch.norm(self.hidden2.weight, 2) ** 2
         out_w_norm = torch.norm(self.output.weight, 2) ** 2
-        return h1_w_norm + h2_w_norm + out_w_norm
+        return h1_w_norm + h2_w_norm + h3_w_norm + out_w_norm
 
     def forward(self, inputs):
         """ Return a forward pass given inputs.
@@ -236,13 +255,12 @@ class AutoEncoder(nn.Module):
         n = nn.ReLU()
         hidden2 = n(hidden2)
 
-        # hidden3 = self.hidden2(hidden2)
-        # p = nn.ReLU()
-        # hidden3 = p(hidden3)
-
+        hidden3 = self.hidden2(hidden2)
+        p = nn.ReLU()
+        hidden3 = p(hidden3)
 
         # h_drop = F.dropout(hidden3, p=0.5, training=True)
-        out = self.output(hidden2)
+        out = self.output(hidden3)
         q = nn.Sigmoid()
         out = q(out)
         #####################################################################
@@ -319,34 +337,35 @@ def evaluate(model, train_data, valid_data):
     correct = 0
 
     for i, u in enumerate(valid_data["user_id"]):
-        inputs = Variable(train_data[u]).unsqueeze(0)
-        output = model(inputs)
+        if u < train_data.shape[0]:
+            inputs = Variable(train_data[u]).unsqueeze(0)
+            output = model(inputs)
 
-        guess = output[0][valid_data["question_id"][i]].item() >= 0.5
-        if guess == valid_data["is_correct"][i]:
-            correct += 1
-        total += 1
+            guess = output[0][valid_data["question_id"][i]].item() >= 0.5
+            if guess == valid_data["is_correct"][i]:
+                correct += 1
+            total += 1
     return correct / float(total)
 
 
 def main():
     # p_0 represents non premium pupil, p_1 premium pupil, p_2 premium pupil data not available
     zero_train_matrix, train_matrix, valid_data, test_data = load_data()
-    # m_0, m_1, m_2 = split_by_premium(train_matrix)
-    # g_0, g_1, g_2 = split_by_gender(train_matrix=train_matrix)
+    # m_0, m_1, m_2, z_0, z_1, z_2 = split_by_premium(train_matrix, zero_train_matrix)
+    # g_0, g_1, g_2, z_0, z_1, z_2 = split_by_gender(train_matrix, zero_train_matrix)
 
     #####################################################################
     # Try out 5 different k and select the best k using the             #
     # validation set.                                                   #
     #####################################################################
     # Set model hyperparameters.
-    k = 50
+    k = 500
     model = AutoEncoder(num_question=train_matrix.shape[1], k=k)
 
     # Set optimization hyperparameters.
-    lr = 0.01
+    lr = 0.005
     num_epoch = 20
-    lamb = 0.001
+    lamb = 0.01
     # validation accuracy for g_0
     # t_0 = train(model, lr, lamb, g_0, zero_train_matrix, valid_data, num_epoch)
     # validation accuracy for g_1
@@ -355,15 +374,15 @@ def main():
     # t_2 = train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch)
 
     # trial with split by premium pupil
-    t_0 = train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch)
-    # t_1 = train(model, lr, lamb, m_1, zero_train_matrix, valid_data, num_epoch)
-    # t_2 = train(model, lr, lamb, m_2, zero_train_matrix, valid_data, num_epoch)
+    t_0 = train(model, lr, lamb, train_matrix, zero_train_matrix, test_data, num_epoch)
+    # t_1 = train(model, lr, lamb, g_1, z_1, valid_data, num_epoch)
+    # t_2 = train(model, lr, lamb, g_2, z_2, valid_data, num_epoch)
 
     plt.figure()
     plt.plot(t_0)
     # plt.plot(t_1)
     # plt.plot(t_2)
-    plt.title("Accuracy over iterations on validation set")
+    plt.title("Accuracy over iterations on test set")
     plt.show()
     #####################################################################
     #                       END OF YOUR CODE                            #
