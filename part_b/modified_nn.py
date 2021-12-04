@@ -351,7 +351,7 @@ def evaluate(model, train_data, valid_data):
 def main():
     # p_0 represents non premium pupil, p_1 premium pupil, p_2 premium pupil data not available
     zero_train_matrix, train_matrix, valid_data, test_data = load_data()
-    # m_0, m_1, m_2, z_0, z_1, z_2 = split_by_premium(train_matrix, zero_train_matrix)
+    m_0, m_1, m_2, z_0, z_1, z_2 = split_by_premium(train_matrix, zero_train_matrix)
     # g_0, g_1, g_2, z_0, z_1, z_2 = split_by_gender(train_matrix, zero_train_matrix)
 
     #####################################################################
@@ -364,7 +364,7 @@ def main():
 
     # Set optimization hyperparameters.
     lr = 0.005
-    num_epoch = 20
+    num_epoch = 15
     lamb = 0.01
     # validation accuracy for g_0
     # t_0 = train(model, lr, lamb, g_0, zero_train_matrix, valid_data, num_epoch)
@@ -374,14 +374,14 @@ def main():
     # t_2 = train(model, lr, lamb, train_matrix, zero_train_matrix, valid_data, num_epoch)
 
     # trial with split by premium pupil
-    t_0 = train(model, lr, lamb, train_matrix, zero_train_matrix, test_data, num_epoch)
-    # t_1 = train(model, lr, lamb, g_1, z_1, valid_data, num_epoch)
-    # t_2 = train(model, lr, lamb, g_2, z_2, valid_data, num_epoch)
+    t_0 = train(model, lr, lamb, m_0, z_0, valid_data, num_epoch)
+    t_1 = train(model, lr, lamb, m_1, z_1, valid_data, num_epoch)
+    t_2 = train(model, lr, lamb, m_2, z_2, valid_data, num_epoch)
 
     plt.figure()
     plt.plot(t_0)
-    # plt.plot(t_1)
-    # plt.plot(t_2)
+    plt.plot(t_1)
+    plt.plot(t_2)
     plt.title("Accuracy over iterations on test set")
     plt.show()
     #####################################################################
